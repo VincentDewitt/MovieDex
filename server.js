@@ -7,7 +7,8 @@ const MOVIEDEX = require('./movies-data.json')
 const { nextTick } = require('process')
 
 const app = express()
-app.use(morgan('dev'))
+const morganSetting = process.env.NODE_ENV === 'production' ? 'tiny' : 'common'
+app.use(morgan(morganSetting))
 app.use(helmet())
 app.use(cors())
 
@@ -22,8 +23,6 @@ next();
 
 app.get('/movie', validateBearerToken, function handlegetMovie (req,res){
    let response = MOVIEDEX;
-   console.log(response)
-   console.log(process.env.API_TOKEN)
    if (req.query.genre){
        response = response.filter(movies => {
         let genreFilter = movies.genre
@@ -49,8 +48,18 @@ app.get('/movie', validateBearerToken, function handlegetMovie (req,res){
 
  return res.json(response)
 })
-const PORT = 7000
+
+app.use((error, req, res, next) => {
+    let response
+    if (process.env.NODE_ENV === 'production'){
+        response = {error: { message: 'server error'}}
+    } else{
+        response = { error }
+    }
+    res.status(500).json(response)
+})
+
+const PORT = process.env.PORT || 7000
 
 app.listen(PORT, () => {
-    console.log(`Server is Running on port ${PORT}`)
 })
